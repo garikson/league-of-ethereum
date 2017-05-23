@@ -1,0 +1,11 @@
+{
+  "name": "dot-dom",
+  "version": "1.0.1",
+  "description": "Dot dom",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nick",
+  "license": "MIT"
+}

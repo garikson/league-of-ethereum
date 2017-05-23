@@ -1,0 +1,15 @@
+{
+  "name": "dot-html",
+  "version": "1.0.0",
+  "description": "Dot dom",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nick",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "*",
+    "hyperx": "*"
+  }
+}
