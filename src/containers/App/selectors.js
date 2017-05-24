@@ -45,6 +45,10 @@ export const selectProposalCounts = state => ({
 });
 
 
+// league selectors
+export const selectLeague = state => state.league;
+
+
 // vote selectors
 export const selectVote = state => state.vote;
 
@@ -98,6 +102,7 @@ export const selectExecuteSuccess = state => state.executeProposal.success;
 
 export const selectExecutePending = state => state.executeProposal.pending;
 
+
 // environment
 export const selectEnvironment = state => state.environment;
 
@@ -106,3 +111,7 @@ export const selectEnvironment = state => state.environment;
 export const selectProposalVotes = (state, proposalID) => state.proposalVotes[proposalID].ids;
 
 export const selectProposalVote = (state, proposalID, voteID) => state.proposalVotes[proposalID][voteID];
+
+
+// contribute info
+export const selectContributeInfo = state => state.contributeInfo;

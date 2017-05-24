@@ -3,19 +3,120 @@ import styled from 'dot-styled-components';
 import { Component } from 'react';
 
 import { connect } from 'react-redux';
-import { selectBoardRulesKind } from 'containers/App/selectors';
+import { selectBoardRulesKind, selectAccount, selectEnvironment } from 'containers/App/selectors';
+import { loadAccount } from 'containers/App/actions';
+import fecha from 'fecha';
+import fromnow from 'moment-from-now';
 
 import { t } from 'i18n';
 
-function MembershipModal(props) {
-  const { display = false } = props || {};
+function displayDate(unixtimestamp, withTime) {
+  return fecha.format(new Date(parseInt(unixtimestamp || 0, 10) * 1000), 'mediumDate');
+}
+
+function fromNow(unixtimestamp) {
+  return fromnow(parseInt(unixtimestamp, 10) * 1000 || 0);
+}
+
+function MembershipModalComponent(props) {
+  const { display = false, headerComponent, loadAccountInfo, account } = props || {};
 
   return html`
-    <div class=${display ? 'show' : 'hidden'} style="position: fixed; padding: 30px; box-shadow: 1px 1px 1px rgba(0,0,0,.1); padding-top: 0px; top: 89px; background: #FFF; z-index:1001; right: 25%; height: 300px; min-width: 650px; border: 1px solid #F1F1F1; border-top: 0px;">
-      <h3>Membership</h3>
+    <div>
+
+      <div class=${display ? 'show' : 'hidden'} style="position: fixed; padding: 30px; box-shadow: 1px 1px 1px rgba(0,0,0,.1); padding-top: 0px; top: 89px; background: #FFF; z-index:1001; right: 18%; min-height: 300px; min-width: 650px; border: 1px solid #F1F1F1; border-top: 0px;">
+
+        <h3>Membership</h3>
+
+        <div className=${account.isMember ? 'show' : 'hidden'}>
+
+
+          <div class="row">
+            <br /><br />
+
+            <div class="col-xs-4">
+
+                <h4>Balance</h4>
+                <h3 class="text-info"><b>${account.tokenBalance}</b> (LoE) tokens</h3>
+
+            </div>
+            <div class="col-xs-4">
+
+                <h4>Start Date</h4>
+                <h3>${displayDate(account.joinedAt)} <br /> <small>(${fromNow(account.joinedAt)})</small></h3>
+
+            </div>
+            <div class="col-xs-4">
+
+                <h4>Next Payment Due</h4>
+                <h3>${displayDate(account.memberUntil, true)} <br /></h3>
+
+            </div>
+          </div>
+
+
+          <hr />
+
+
+          <br />
+
+
+          <div class="text-right">
+            <button class="btn btn-default" onClick=${() => headerComponent.setState({ openMembership: false })}>Close</button>
+          </div>
+
+        </div>
+
+
+
+        <div className=${account.isMember ? 'hidden' : 'show'}>
+
+          <p>To view your membership, please enter your Ethereum address</p>
+
+          <br /><br />
+
+          <label class="control-label">Address</label>
+          <div class="input-group" style="width: 600px;">
+            <input id="memberAddress" type="text" className="form-control" defaultValue="" placeholder="0x" />
+            <span class="input-group-btn">
+              <button class="btn btn-warning" onClick=${() => loadAccountInfo()}>Use MetaMask</button>
+            </span>
+          </div>
+
+          <br /><br />
+
+          <div class="text-right">
+            <button class="btn btn-default" onClick=${() => headerComponent.setState({ openMembership: false })}>Close</button>
+            <button class="btn btn-success" onClick=${() => loadAccountInfo(
+              document.querySelector('#memberAddress').value, // eslint-disable-line
+            )}>View Membership</button>
+          </div>
+
+        </div>
+
+        <div class="clearfix"></div>
+      </div>
+
+      <div class=${display ? 'show' : 'hidden'} onClick=${() => headerComponent.setState({ openMembership: false })} style="position: fixed; top: 89px; left: 0px; right: 0px; bottom: 0px; z-index: 500;"></div>
+
     </div>
   `;
 }
+
+function mapStateToPropsModal(state) {
+  return {
+    account: selectAccount(state),
+    environment: selectEnvironment(state),
+  };
+}
+
+function mapDispatchToProps(dispatch) {
+  return {
+    loadAccountInfo: address => dispatch(loadAccount(address)),
+  };
+}
+
+const MembershipModal = connect(mapStateToPropsModal, mapDispatchToProps)(MembershipModalComponent);
 
 class Header extends Component {
   componentWillMount() {
@@ -56,7 +157,7 @@ class Header extends Component {
             Mission</a>
         </div>
 
-        <MembershipModal display=${openMembership}></MembershipModal>
+        <MembershipModal display=${openMembership} headerComponent=${self}></MembershipModal>
       </div>
     `;
   }

@@ -38,7 +38,7 @@ module.exports = (options) => ({ // eslint-disable-line
     },
   },
   plugins: [
-    new options.plugins.IncludeContracts(['BoardRoom', 'Board', 'Rules', 'Proxy', 'Token']),
+    new options.plugins.IncludeContracts(['BoardRoom', 'Board', 'Rules', 'Proxy', 'Token', 'MiniMeToken', 'LeagueRules']),
     new options.plugins.JSONFilter(),
     new options.plugins.JSONExpander(),
   ],

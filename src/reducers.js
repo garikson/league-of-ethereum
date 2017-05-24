@@ -8,6 +8,7 @@ import {
   accountReducer,
   transactionsReducer,
   environmentReducer,
+  leagueReducer,
 } from 'containers/App/reducer';
 
 // i18n state
@@ -50,6 +51,7 @@ export function createReducer(asyncReducers) { // eslint-disable-line
     transactions: transactionsReducer,
     account: accountReducer,
     board: boardReducer,
+    league: leagueReducer,
     language: languageReducer,
     route: routeReducer,
     time: timeReducer,

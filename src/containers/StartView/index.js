@@ -3,7 +3,23 @@ import styled, { presets } from 'dot-styled-components';
 import { Component } from 'react';
 
 import { connect } from 'react-redux';
+import Eth from 'ethjs';
 import { polyglot, localeTranslations } from 'i18n';
+
+import {
+  selectEnvironment,
+  selectContributeInfo,
+  selectTransaction,
+  selectAccount,
+  selectLeague,
+} from 'containers/App/selectors';
+
+import { contribute, transactionReset } from 'containers/App/actions';
+
+import MetaMaskWarning from 'containers/MetaMaskWarning';
+import Margin from 'components/Margin';
+import Padding from 'components/Padding';
+import EtherscanLink from 'components/EtherscanLink';
 
 const Wrapper = styled.div`
   padding: 20px;
@@ -20,6 +36,38 @@ const OuterWrapper = styled.div`
   overflow-x: hidden;
 `;
 
+const projects = {
+  EWASM: {
+    address: '0x4ae2b62cd128837df5b842625b19e4088a112a81', // '0x51434F6502b6167ABEC98Ff9F5fd37Ef3E07E7d2',
+    leader: 'Martin Bezce (wanderer)',
+    description: html`<span>Ewasm’s goal is to research and replace the EVM with Webassembly and secondarily, implement a client for the current system which can be efficiently JITed (or transcompiled) to WebAssembly.
+
+      <br /><br />
+
+      A major piece of evaluating WebAssembly for blockchain usage will be create a test network and this year the focus of the Ewasm team will be bringing that test network to life.
+    </span>`,
+    website: 'http://github.com/ewasm',
+    websiteName: 'EWASM Github',
+  },
+  Truffle: {
+    address: '0x',
+    leader: 'Tim Coulter',
+    website: 'http://truffleframework.com/',
+    websiteName: 'truffleframework.com',
+  },
+  OpenZepplin: {
+    address: '0xc897C412e533D8aAFC5e2f3F6Fe2e3fA46f72A45',
+    leader: 'Manuel Araoz',
+    website: 'https://openzeppelin.org/',
+    websiteName: 'openzeppelin.org',
+  },
+  BoardRoom: {
+    leader: 'Nick Dodson',
+    website: 'https://boardroom.to',
+    websiteName: 'boardroom.to',
+  },
+};
+
 const membershipFee = '0.1';
 
 function TransactionAlert(props) {
@@ -33,22 +81,75 @@ function TransactionAlert(props) {
   `;
 }
 
-function ContributionModal(props) {
-  const { kind = 'EWASM', display = false, contributeModule } = props || {};
+function ContributeAlertsComponent(props) {
+  const alertClass = props.error ? 'warning' : (props.success ? 'success' : 'info'); // eslint-disable-line
+  const alertMessage = (props.pending && !props.transactionHash ? 'Awaiting transaction approval..' : (   // eslint-disable-line
+    (props.pending && props.transactionHash && !props.error && !props.success) ? 'Your transaction is being mined, this may take a minute or two...' : (   // eslint-disable-line
+      props.error ? 'There was an error while contributing ' :             // eslint-disable-line
+      (
+        props.success ? 'Your contribution has been made!' : 'Your contribution is being made..'
+      )
+  )));
 
-  return html`<div class="modal" style="display: ${display ? 'block' : 'none'}; margin-top: 200px;">
-    <div style="top: 0px; bottom: 0px; left: 0px; right: 0px; position: fixed; display: block; z-index: 11000; background: rgba(0,0,0,.5);" onClick=${() => contributeModule.setState({ openContribute: false })}></div>
+  return (props.pending || props.error || props.success) ? html`
+    <Margin sm-top="20px">
+      <div className="alert alert-${alertClass} text-left">
+        <Padding sm-bottom="10px">
+          <h3>${props.error ? 'Hmm.. There was a problem' : 'Contributing to project..'}</h3>
+          <p>
+            ${alertMessage}
+          </p>
+          ${props.transactionHash || props.error ? html`<span><hr /></span>` : ''}
+          <div style="overflow-wrap: break-word;">
+            ${props.error ? String(JSON.stringify(props.error, null, 2)) : ''}
+          </div>
+          ${props.transactionHash ? html`<EtherscanLink transactionHash=${props.transactionHash} light="true"></EtherscanLink>` : ''}
+        </Padding>
+      </div>
+    </Margin>
+  ` : html`<span></span>`;
+}
+
+function CreateAlertsMapStateToProps(state) {
+  return selectTransaction(state, 'contribute');
+}
+
+const ContributeAlert = connect(CreateAlertsMapStateToProps, null)(ContributeAlertsComponent);
+
+function ContributionModalComponent(props) {
+  const { kind = 'EWASM', display = false, contributeModule, account = {}, contributeTransaction, contributeToProject, resetTransaciton } = props || {};
+  const recipientAddress = projects[kind].address;
+  const closeAndReset = () => {
+    // if success or failure close dialog
+    if (contributeTransaction.success || contributeTransaction.error) {
+      resetTransaciton();
+    }
+
+    contributeModule.setState({ openContribute: false });
+  };
+
+  return html`<div class="modal" style="display: ${display ? 'block' : 'none'}; margin-top: 110px;">
+    <div style="top: 0px; bottom: 0px; left: 0px; right: 0px; position: fixed; display: block; z-index: 11000; background: rgba(0,0,0,.5);" onClick=${closeAndReset}></div>
     <div class="modal-dialog" style=" z-index: 13000;">
-      <div class="modal-content">
+      <div class="modal-content" style="max-height: 800px; overflow-y: auto;">
         <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true" onClick=${() => contributeModule.setState({ openContribute: false })}>x</button>
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true" onClick=${closeAndReset}>x</button>
           <h4 class="modal-title">Contribute to ${kind}</h4>
         </div>
-        <div class="modal-body">
-          <div class="">
+
+        <div class="model-body">
+          <MetaMaskWarning></MetaMaskWarning>
+        </div>
+
+        <div class="modal-body show">
+          <div class=${account.isMember ? 'hidden' : 'show'}>
             <p>You are currently not a member of the League of Ethereum, please contribute at least the minimum membership due below.</p>
 
             <p><b>Minimum membership due: ${membershipFee} ether</b></p>
+          </div>
+
+          <div class=${account.isMember ? 'show' : 'hidden'}>
+            <p>Please enter the Ether amount you would like to contribute below.</p>
           </div>
 
           <br />
@@ -63,23 +164,55 @@ function ContributionModal(props) {
         </div>
 
 
-        <div class="modal-body" style="display: none;">
-          <p>Please enter the address you want to use for your membership with League of Ethereum</p>
+        <div class="modal-body hidden">
+          <p>Please enter the address you want to use to contribute.</p>
 
           <br />
 
           <label>Member Address</label>
 
           <input id="membershipAddress" type="text" defaultValue="0x" class="form-control" />
+
+          <br />
         </div>
+
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal" onClick=${() => contributeModule.setState({ openContribute: false })}>Close</button>
-          <button type="button" class="btn btn-success">Contribute</button>
+          <br />
+
+          <button type="button" class="btn btn-default" data-dismiss="modal" onClick=${closeAndReset}>Close</button>
+          <button type="button" class="btn btn-success" onClick=${() => contributeToProject(
+            account.address,
+            recipientAddress,
+            document.querySelector('#contributionValue').value, // eslint-disable-line
+          )}>Contribute</button>
+
+          <br /><br />
+
+          <ContributeAlert></ContributeAlert>
         </div>
       </div>
     </div>
   </div>`;
 }
+
+
+function mapStateToPropsContributionModal(state) {
+  return {
+    environment: selectEnvironment(state),
+    account: selectAccount(state),
+    contirbuteInfo: selectContributeInfo(state),
+    contributeTransaction: selectTransaction(state, 'contribute'),
+  };
+}
+
+function mapDispatchToPropsContributionModal(dispatch) {
+  return {
+    contributeToProject: (contributorAddress, recipientAddress, etherValue) => dispatch(contribute(contributorAddress, recipientAddress, etherValue)),
+    resetTransaciton: () => dispatch(transactionReset('contribute')),
+  };
+}
+
+const ContributionModal = connect(mapStateToPropsContributionModal, mapDispatchToPropsContributionModal)(ContributionModalComponent);
 
 function ProjectsButton(props) {
   const { name = '', selectedKind, contributeModule } = props || {};
@@ -94,40 +227,16 @@ function ProjectsButton(props) {
   `;
 }
 
-const projects = {
-  EWASM: {
-    address: '0x',
-    leader: 'Martin Bezce (wanderer)',
-    description: html`<span>Ewasm’s goal is to research and replace the EVM with Webassembly and secondarily, implement a client for the current system which can be efficiently JITed (or transcompiled) to WebAssembly.
-
-      <br /><br />
-
-      A major piece of evaluating WebAssembly for blockchain usage will be create a test network and this year the focus of the Ewasm team will be bringing that test network to life.
-    </span>`,
-    website: 'http://github.com/ewasm',
-    websiteName: 'EWASM Github',
-  },
-  Truffle: {},
-  OpenZepplin: {
-    address: '0xc897C412e533D8aAFC5e2f3F6Fe2e3fA46f72A45',
-    leader: 'Manuel Araoz',
-    website: 'https://openzeppelin.org/',
-    websiteName: 'openzeppelin.org',
-  },
-  BoardRoom: {
-    leader: 'Nick Dodson',
-    website: 'https://boardroom.to',
-    websiteName: 'boardroom.to',
-  },
-};
-
 class StartView extends Component {
 
   render() {
     const self = this;
     const props = self.props;
     const state = self.state;
+    const league = props.league;
     const { openContribute = false, selectedKind = 'EWASM', readMore = false } = state || {};
+
+    console.log(league);
 
     return html`
       <div>
@@ -166,17 +275,17 @@ class StartView extends Component {
               <div class="row">
 
                 <div class="col-xs-4  text-center">
-                  <h1><b class=" text-success">240</b></h1>
+                  <h1><b class=" text-success">${league.totalMembers || 0}</b></h1>
                   <p>Members</p>
                 </div>
 
                 <div class="col-xs-4  text-center">
-                  <h1><b>253</b></h1>
+                  <h1><b>${league.totalTokenSupply || 0}</b></h1>
                   <p>(LoE) League Tokens</p>
                 </div>
 
                 <div class="col-xs-4 text-center">
-                  <h1><b>11.2</b></h1>
+                  <h1><b>${Eth.fromWei(league.totalEtherRaised || 0, 'ether').toString(10)}</b></h1>
                   <p>Ether Raised</p>
                 </div>
 
@@ -241,13 +350,15 @@ class StartView extends Component {
                       <br /><br />
                     </div>
 
-                    <button onClick=${() => self.setState({ readMore: !readMore })} class="btn btn-link text-success" style="padding: 0px;"> Read more </button>
+                    <button onClick=${() => self.setState({ readMore: !readMore })} class="btn btn-link text-success" style="padding: 0px;">
+                      Read ${readMore ? 'less' : 'more'}
+                    </button>
 
 
                     <br /><br />  <br /><br />
 
                     <button class="btn btn-lg btn-success" onClick=${() => self.setState({ openContribute: true })}>
-                      Contribute
+                      Select for Contribution
                     </button>
 
                   </div>
@@ -340,7 +451,17 @@ class StartView extends Component {
   }
 }
 
-export default connect()(StartView);
+function mapStateToPropsStartView(state) {
+  return {
+    league: selectLeague(state),
+  };
+}
+
+function mapDispatchToProps(state) {
+  return {};
+}
+
+export default connect(mapStateToPropsStartView, mapDispatchToProps)(StartView);
 
 /*
 

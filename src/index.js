@@ -14,7 +14,7 @@ import { Router, changeLocation } from 'routes';
 import { store } from 'store';
 
 import { selectBoards } from 'containers/App/selectors';
-import { loadAccount, boardDiscovered, loadBoard } from 'containers/App/actions';
+import { loadNetwork, loadAccount, loadBoard } from 'containers/App/actions';
 
 import { getItem } from 'utils/localStore';
 import environments from 'contracts/lib/environments.json';
@@ -38,6 +38,9 @@ class App extends Component { // eslint-disable-line
 
 // on window load, render
 window.addEventListener('load', () => { // eslint-disable-line
+  setTimeout(() => dispatch(loadAccount()), 3000);
+  dispatch(loadNetwork());
+
   render( // eslint-disable-line
     html`<App></App>`, // eslint-disable-line
     document.getElementById('container'), // eslint-disable-line

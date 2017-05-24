@@ -27,8 +27,12 @@ import {
   TRANSACTION_PENDING,
   TRANSACTION_ERROR,
   TRANSACTION_SUCCESS,
+  TRANSACTION_RESET,
 
   NETWORK_LOADED,
+
+  CONTRIBUTE_INFO,
+  LEAGUE_LOADED,
 } from './constants';
 
 const boardInitialState = Immutable({
@@ -81,9 +85,34 @@ const accountInitialState = Immutable({
   balance: '0',
   address: '0x0000000000000000000000000000000000000000',
   valid: false,
+  tokenBalance: 0,
+  nextPaymentDue: null,
+  joinedAt: null,
+  memberUntil: null,
 });
 
 const transactionsInitialState = Immutable({});
+
+const leagueInitialState = Immutable({
+  totalMembers: 0,
+  totalTokenSupply: 0,
+  totalEtherRaised: 0,
+});
+
+export function leagueReducer(state = leagueInitialState, action) {
+  console.log(action);
+
+  switch (action.type) {
+    /* istanbul ignore next */
+    case LEAGUE_LOADED:
+      return state
+        .setIn(['totalMembers'], action.totalMembers)
+        .setIn(['totalEtherRaised'], action.totalEtherRaised)
+        .setIn(['totalTokenSupply'], action.totalSupply);
+    default:
+      return state;
+  }
+}
 
 export function environmentReducer(state = environmentInitialState, action) {
   switch (action.type) {
@@ -127,6 +156,16 @@ export function transactionsReducer(state = transactionsInitialState, action) {
         .setIn([action.name, 'pending'], false)
         .setIn([action.name, 'success'], true)
         .setIn([action.name, 'output'], action.output);
+    case TRANSACTION_RESET:
+      return state.setIn([action.name], {
+        error: null,
+        constant: action.constant || false,
+        success: false,
+        pending: false,
+        transactionHash: null,
+        inputs: [],
+        output: {},
+      });
     default:
       return state;
   }
@@ -153,6 +192,28 @@ export function executeProposalReducer(state = executeInitialState, action) {
         pending: false,
         success: true,
         transactionHash: action.txReceipt.transactionHash,
+      });
+    default:
+      return state;
+  }
+}
+
+const contributeInitialState = Immutable({
+  to: '0x',
+  data: '0x',
+  gas: 3000000,
+  value: '0',
+});
+
+export function contributeReducer(state = contributeInitialState, action) {
+  switch (action.type) {
+    /* istanbul ignore next */
+    case CONTRIBUTE_INFO:
+      return state.merge({
+        to: action.to,
+        data: action.data,
+        gas: action.gas,
+        value: action.value,
       });
     default:
       return state;
@@ -222,6 +283,10 @@ export function accountReducer(state = accountInitialState, action) {
         address: action.address,
         balance: action.balance.toString(10),
         valid: action.valid,
+        tokenBalance: action.tokenBalance.toString(10),
+        joinedAt: action.contributorInfo.joinedAt.toString(10),
+        memberUntil: action.memberUntil.toString(10),
+        isMember: action.contributorInfo.joinedAt.toNumber(10) > 0,
       });
     default:
       return state;

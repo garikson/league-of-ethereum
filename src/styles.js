@@ -32,7 +32,6 @@ setTheme({
 
 injectGlobal`
   body, html {
-    padding-bottom: 100px;
   }
 
   .pie svg {

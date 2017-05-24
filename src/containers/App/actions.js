@@ -45,7 +45,49 @@ import {
 
   LOAD_NETWORK,
   NETWORK_LOADED,
+
+  CONTRIBUTE,
+  CONTRIBUTE_INFO,
+  TRANSACTION_RESET,
+
+  LEAGUE_LOADED,
+  LOAD_LEAGUE,
 } from './constants';
+
+// contribute methods
+export function contribute(contributorAddress, recipientAddress, etherValue) {
+  return {
+    type: CONTRIBUTE,
+    contributorAddress,
+    recipientAddress,
+    etherValue,
+  };
+}
+
+export function contributeInfo(to, value, gas, data) {
+  return {
+    type: CONTRIBUTE_INFO,
+    to,
+    value,
+    gas,
+    data,
+  };
+}
+
+export function loadLeague() {
+  return {
+    type: LOAD_LEAGUE,
+  };
+}
+
+export function leagueLoaded(totalMembers, totalSupply, totalEtherRaised) {
+  return {
+    type: LEAGUE_LOADED,
+    totalMembers,
+    totalSupply,
+    totalEtherRaised,
+  };
+}
 
 
 // transaction actions
@@ -135,6 +177,13 @@ export function transactionSuccess(name, output) {
     type: TRANSACTION_SUCCESS,
     name,
     output,
+  };
+}
+
+export function transactionReset(name) {
+  return {
+    type: TRANSACTION_RESET,
+    name,
   };
 }
 
@@ -329,17 +378,22 @@ export function clearProposals() {
   };
 }
 
-export function loadAccount() {
+export function loadAccount(address) {
   return {
     type: LOAD_ACCOUNT,
+    address,
   };
 }
 
-export function accountLoaded(address, balance, valid) {
+export function accountLoaded(address, balance, valid, contributorInfo, tokenBalance, contributorExtensionInfo, memberUntil) {
   return {
     type: ACCOUNT_LOADED,
     address,
     balance,
     valid,
+    tokenBalance,
+    contributorInfo,
+    contributorExtensionInfo,
+    memberUntil,
   };
 }
